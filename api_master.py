@@ -1,8 +1,8 @@
 import yfinance as yf
-import pandas as pd
+from pandas import DataFrame
 from calculations import calculate_SMA, plot_SMA
 
-def view_symbol(symbol: str) -> None:
+def view_symbol(symbol: str, ret=False) -> DataFrame:
     if not symbol:
         raise ValueError("symbol not selected")
     
@@ -10,3 +10,6 @@ def view_symbol(symbol: str) -> None:
     df = calculate_SMA(ticker, "6mo", "1d")
     if df is not None:
         plot_SMA(df, symbol)
+    
+    if ret:
+        return df
