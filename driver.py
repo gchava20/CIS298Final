@@ -1,22 +1,22 @@
 from api_master import view_symbol
 
-def options(company: str) -> None:
+def main():
     while True:
-        selection = 0
-
-        if selection == 0:
-            selection = int(input("Select which action you'd like to perform: (1) VIEW SYMBOL, (-1) EXIT : ").strip())
-        if selection == -1:
+        company = input("Which company would you like to view? If you want to quit the program, type exit").strip().upper()
+        if company.lower() == 'exit':
             break
 
-        if selection == 1:
-            view_symbol(company)
-
-
-def main():
-    company = input("Which company would you like to view? ").strip().upper()
-    options(company)
-
+        selection = input("Select which action you'd like to perform: (1) VIEW SYMBOL, (-1) EXIT : ").strip()
+        
+        if selection == "-1":
+            break
+        elif selection == "1":
+            try:
+                view_symbol(company)
+            except Exception as e:
+                print(f"Error fetching data for {company}: {e}")
+        else:
+            print("Invalid selection. Try again.")
 
 if __name__ == "__main__":
     main()
