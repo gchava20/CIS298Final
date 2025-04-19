@@ -1,6 +1,7 @@
 import yfinance as yf
+import matplotlib.pyplot as plt
 
-def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> None:
+def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str):
 
     if time_period == "" or interval == "":
         return -1
@@ -12,5 +13,19 @@ def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> None:
     # Then compare that to mean of the 50 days
 
     # SMA_20 and SMA_50 added as new columns to the ticker dataframe
-    print(data["Close"].rolling(window=20).mean())
-    print(data["Close"].rolling(window=50).mean())
+    data = ticker.history(period=time_period, interval=interval)
+    data["SMA_20"] = data["Close"].rolling(window=20).mean()
+    data["SMA_50"] = data["Close"].rolling(window=50).mean()
+    return data
+
+def plot_SMA(data, symbol):
+    plt.figure(figsize=(12,6))
+    plt.plot(data.index, data["Close"], label="Close Price")
+    plt.plot(data.index, data["SMA_20"], label="20-Day SMA")
+    plt.plot(data.index, data["SMA_50"], label="50-Day SMA")
+    plt.title(f"{symbol} Price & SMAs")
+    plt.xlabel("Date")
+    plt.ylabel("Price ($)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
