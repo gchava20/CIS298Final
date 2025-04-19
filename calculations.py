@@ -1,7 +1,8 @@
 import yfinance as yf
+from pandas import DataFrame
 import matplotlib.pyplot as plt
 
-def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str):
+def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> DataFrame:
 
     if time_period == "" or interval == "":
         return -1
@@ -29,3 +30,9 @@ def plot_SMA(data, symbol):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+def export_to_csv(df: DataFrame) -> None:
+
+    with open("data.csv", "w") as csvfile:
+        df.to_csv(csvfile)
+        print("Data Exported to 'data.csv' File!")
