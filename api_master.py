@@ -13,3 +13,15 @@ def view_symbol(symbol: str, ret=False) -> DataFrame:
     
     if ret:
         return df
+    
+
+def view_sector(symbol: str) -> None:
+    if not symbol:
+        raise ValueError("symbol not selected")
+    print(yf.Ticker(symbol).info.get("sector"))
+
+
+def view_industry(symbol: str) -> None:
+    if not symbol:
+        raise ValueError("symbol not selected")
+    print(yf.Ticker(symbol).info.get("industry"))
