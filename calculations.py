@@ -4,6 +4,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+
+def calculate_EMA(prices: np.ndarray, window: int) -> np.ndarray:
+
+    """
+    Calculates the Exponential Moving Average (EMA) for a given price array and window size.
+    The EMA gives more weight to recent prices, making it more responsive to new information.
+    Used to identify buy/sell signals and trends.
+    """
+
+    ema = np.zeros_like(prices)
+    alpha = 2 / (window + 1)
+    ema[0] = prices[0]
+
+    for i in range(1, len(prices)):
+        ema[i] = alpha * prices[i] + (1 - alpha) * ema[i - 1]
+
+    return ema
+
 def calculate_bollinger_bands(prices: np.ndarray, window: int = 20) -> tuple:
 
     """
@@ -66,25 +84,6 @@ def calculate_RSI(prices: np.ndarray, window: int = 14) -> np.ndarray:
     return rsi
 
 
-def calculate_EMA(prices: np.ndarray, window: int) -> np.ndarray:
-
-    """
-    Calculates the Exponential Moving Average (EMA) for a given price array and window size.
-    The EMA gives more weight to recent prices, making it more responsive to new information.
-    Used to identify buy/sell signals and trends.
-    """
-
-    ema = np.zeros_like(prices)
-    alpha = 2 / (window + 1)
-    ema[0] = prices[0]
-
-    for i in range(1, len(prices)):
-        ema[i] = alpha * prices[i] + (1 - alpha) * ema[i - 1]
-
-    return ema
-
-
-
 def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> DataFrame:
 
     if time_period == "" or interval == "":
@@ -107,16 +106,15 @@ def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> DataFra
     ema_20 = calculate_EMA(close_prices, 20)
     data["EMA_20"] = ema_20
 
-    # RSI added as a new column to the ticker dataframe
-    rsi = calculate_RSI(close_prices)
-    data["RSI"] = rsi
-
-
     # Bollinger Bands added as new columns to the ticker dataframe
     sma_bb, upper_bb, lower_bb = calculate_bollinger_bands(close_prices, 20)
     data["BB_Middle"] = np.concatenate((np.full(19, np.nan), sma_bb))
     data["BB_Upper"] = np.concatenate((np.full(19, np.nan), upper_bb))
     data["BB_Lower"] = np.concatenate((np.full(19, np.nan), lower_bb))
+
+     # RSI added as a new column to the ticker dataframe
+    rsi = calculate_RSI(close_prices)
+    data["RSI"] = rsi
 
     return data
 
