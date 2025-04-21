@@ -206,20 +206,6 @@ def get_user_input():
     data = calculate_SMA(ticker, time_period, interval)
     return data, ticker_symbol, interval, future_days
 
-# Main function to run everything
-def main():
-    # Get user input for stock symbol, interval, and time period
-    data, ticker_symbol, interval, future_days = get_user_input()
-
-    # Train the Random Forest model
-    model, X_test, y_test, y_pred = train_random_forest(data, future_days)
-
-    # Plot the results
-    plot_SMA(data, ticker_symbol, y_test, y_pred)
-
-if __name__ == "__main__":
-    main()
-
 def export_to_csv(df: DataFrame) -> None:
 
     with open("data.csv", "w") as csvfile:
