@@ -118,21 +118,40 @@ def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> DataFra
 def train_random_forest(data, future_days=5):
     features = ['RSI', 'SMA_20', 'SMA_50', 'EMA_20', 'BB_Middle', 'BB_Upper', 'BB_Lower']
     target = 'Close'
+
     data = data.dropna(subset=features + [target])
     X = data[features]
     y = data[target]
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Train the Random Forest model
     model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
+    
+    # Predict on the test set
     y_pred = model.predict(X_test)
 
     # Predict future prices
     future_features = X.iloc[-future_days:]  # Use the last `future_days` rows for prediction
     future_predictions = model.predict(future_features)
 
+    # Functions to evaluate the model
+    train_score = model.score(X_train, y_train)
+    test_score = model.score(X_test, y_test)
     mae = mean_absolute_error(y_test, y_pred)
-    print(f'Mean Absolute Error: {mae}')
-    print(f'Future Predictions for {future_days} days: {future_predictions}')
+
+
+    # Print Evaluation Report
+    print("\n--- Model Evaluation Report ---")
+    print(f"Train R² Score         : {train_score:.4f}")
+    print(f"Test R² Score          : {test_score:.4f}")
+    print(f"Mean Absolute Error    : {mae:.4f}")
+    print(f"Sample Predictions     :")
+    for actual, pred in zip(y_test[:5], y_pred[:5]):
+        print(f"  Actual: {actual:.2f} | Predicted: {pred:.2f}")
+    print(f"Future Predictions for {future_days} days: {future_predictions}")
+    print(f"-------------------------------\n")
 
     return model, X_test, y_test, y_pred
 
