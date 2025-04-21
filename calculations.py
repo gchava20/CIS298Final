@@ -2,6 +2,11 @@ import yfinance as yf
 from pandas import DataFrame
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score 
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
 
 
 
@@ -85,40 +90,53 @@ def calculate_RSI(prices: np.ndarray, window: int = 14) -> np.ndarray:
 
 
 def calculate_SMA(ticker: yf.Ticker, time_period: str, interval: str) -> DataFrame:
-
-    if time_period == "" or interval == "":
-        return -1
+    if not time_period or not interval:
+        raise ValueError("Time period and interval must be specified.")
 
     data = ticker.history(period=time_period, interval=interval)
+    if data.empty:
+        raise ValueError(f"No data found for the given ticker symbol and time period: {time_period}, {interval}")
+
     close_prices = data["Close"].to_numpy()
 
-    # SMA_20 means the Simple Moving Average over 20 days
-    # We need to "roll" over the 20 days and find the mean
-    # Then compare that to mean of the 50 days
+    if len(close_prices) == 0:
+        raise ValueError("No price data available for the given ticker symbol and time period.")
 
-    # SMA_20 and SMA_50 added as new columns to the ticker dataframe
-    data = ticker.history(period=time_period, interval=interval)
+    # Add SMA, EMA, Bollinger Bands, and RSI calculations
     data["SMA_20"] = data["Close"].rolling(window=20).mean()
     data["SMA_50"] = data["Close"].rolling(window=50).mean()
-
-
-    # EMA_20 added as a new column to the ticker dataframe
-    ema_20 = calculate_EMA(close_prices, 20)
-    data["EMA_20"] = ema_20
-
-    # Bollinger Bands added as new columns to the ticker dataframe
+    data["EMA_20"] = calculate_EMA(close_prices, 20)
     sma_bb, upper_bb, lower_bb = calculate_bollinger_bands(close_prices, 20)
     data["BB_Middle"] = np.concatenate((np.full(19, np.nan), sma_bb))
     data["BB_Upper"] = np.concatenate((np.full(19, np.nan), upper_bb))
     data["BB_Lower"] = np.concatenate((np.full(19, np.nan), lower_bb))
-
-     # RSI added as a new column to the ticker dataframe
-    rsi = calculate_RSI(close_prices)
-    data["RSI"] = rsi
+    data["RSI"] = calculate_RSI(close_prices)
 
     return data
 
-def plot_SMA(data, symbol):
+# Function to train the Random Forest model
+def train_random_forest(data, future_days=5):
+    features = ['RSI', 'SMA_20', 'SMA_50', 'EMA_20', 'BB_Middle', 'BB_Upper', 'BB_Lower']
+    target = 'Close'
+    data = data.dropna(subset=features + [target])
+    X = data[features]
+    y = data[target]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    # Predict future prices
+    future_features = X.iloc[-future_days:]  # Use the last `future_days` rows for prediction
+    future_predictions = model.predict(future_features)
+
+    mae = mean_absolute_error(y_test, y_pred)
+    print(f'Mean Absolute Error: {mae}')
+    print(f'Future Predictions for {future_days} days: {future_predictions}')
+
+    return model, X_test, y_test, y_pred
+
+def plot_SMA(data, symbol, y_test, y_pred):
     plt.figure(figsize=(12,6))
 
     # Prices, EMA, and Bollinger Bands Subplot (Top subplot)
@@ -146,8 +164,42 @@ def plot_SMA(data, symbol):
     plt.legend()
     plt.grid(True)
 
+    # Create a new figure for Actual vs Predicted (Separate Plot)
+    plt.figure(figsize=(12, 6))
+    plt.plot(data.index[-len(y_test):], y_test, label="Actual Close Price", color='blue')
+    plt.plot(data.index[-len(y_pred):], y_pred, label="Predicted Close Price", color='orange')
+    plt.title(f"Actual vs Predicted Close Price for {symbol}")
+    plt.xlabel("Date")
+    plt.ylabel("Price ($)")
+    plt.legend()
+    plt.grid(True)
+
     plt.tight_layout()
     plt.show()
+
+# Function to get user input for stock and interval
+def get_user_input():
+    ticker_symbol = input("Enter the stock ticker symbol (e.g., AAPL, MSFT): ").strip().upper()
+    interval = input("Enter the interval (e.g., 1d, 1wk, 1mo): ").strip()
+    time_period = input("Enter the time period (e.g., 1y, 6mo, 5d): ").strip()
+    future_days = int(input("Enter the number of days into the future to predict: ").strip())
+    ticker = yf.Ticker(ticker_symbol)
+    data = calculate_SMA(ticker, time_period, interval)
+    return data, ticker_symbol, interval, future_days
+
+# Main function to run everything
+def main():
+    # Get user input for stock symbol, interval, and time period
+    data, ticker_symbol, interval, future_days = get_user_input()
+
+    # Train the Random Forest model
+    model, X_test, y_test, y_pred = train_random_forest(data, future_days)
+
+    # Plot the results
+    plot_SMA(data, ticker_symbol, y_test, y_pred)
+
+if __name__ == "__main__":
+    main()
 
 def export_to_csv(df: DataFrame) -> None:
 
